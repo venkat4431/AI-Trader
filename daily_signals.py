@@ -23,9 +23,38 @@ def create_anti_blocking_session():
     })
     return session
 
+def load_ai_predictions():
+    """Reads the latest prediction files from results/ directory and maps out signals."""
+    signals_map = {}
+    for ticker in TICKERS:
+        file_path = os.path.join("results", f"{ticker}_predictions.csv")
+        
+        if os.path.exists(file_path):
+            try:
+                df = pd.read_csv(file_path)
+                if not df.empty and "Probability" in df.columns:
+                    # Extract the probability from the last row
+                    prob = float(df["Probability"].iloc[-1])
+                    action = "BUY" if prob >= 0.60 else "HOLD"
+                    signals_map[ticker] = {"Action": action, "Prob": prob}
+                else:
+                    print(f"⚠️ Warning: {file_path} is empty or missing 'Probability' column. Defaulting to HOLD.")
+                    signals_map[ticker] = {"Action": "HOLD", "Prob": 0.0}
+            except Exception as e:
+                print(f"⚠️ Error reading {file_path}: {e}. Defaulting to HOLD.")
+                signals_map[ticker] = {"Action": "HOLD", "Prob": 0.0}
+        else:
+            print(f"⚠️ Warning: Prediction file missing for {ticker} at {file_path}. Defaulting to HOLD.")
+            signals_map[ticker] = {"Action": "HOLD", "Prob": 0.0}
+            
+    return signals_map
+
 def run_daily_signal_engine():
     print("🚀 Running Daily Signal Engine for Indian NSE Portfolio...")
     os.makedirs("results", exist_ok=True)
+    
+    # Load dynamic predictions from AI model result files
+    signals_map = load_ai_predictions()
     
     # Establish our browser-masked requests session
     custom_session = create_anti_blocking_session()
@@ -49,19 +78,10 @@ def run_daily_signal_engine():
             latest_close = float(df["Close"].iloc[-1])
             
             # -----------------------------------------------------------------
-            # ⚙️ MOCK AI MODEL LAYER (Replace this section with your XGBoost model prediction call)
+            # ⚙️ LIVE AI MODEL LAYER (Dynamically reading from CSV predictions)
             # -----------------------------------------------------------------
-            # Example mock tracking logic simulating your real trained XGBoost outputs
-            mock_signals_map = {
-                "TCS": {"Action": "BUY", "Prob": 0.613},
-                "HDFCBANK": {"Action": "BUY", "Prob": 0.561},
-                "RELIANCE": {"Action": "HOLD", "Prob": 0.463},
-                "INFY": {"Action": "BUY", "Prob": 0.682},
-                "ICICIBANK": {"Action": "BUY", "Prob": 0.693}
-            }
-            
-            action = mock_signals_map.get(ticker, {"Action": "HOLD"})["Action"]
-            prob = mock_signals_map.get(ticker, {"Action": "HOLD"})["Prob"]
+            action = signals_map.get(ticker, {"Action": "HOLD"})["Action"]
+            prob = signals_map.get(ticker, {"Action": "HOLD"})["Prob"]
             # -----------------------------------------------------------------
 
             print(f" -> Ticker: {ticker:<10} | Action: {action:<6} | Prob: {prob:.3f} | Close: ₹{latest_close:.2f}")
