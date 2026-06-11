@@ -83,11 +83,15 @@ def update_and_log(target_date=None):
                 portfolio_df.at[idx, "Exit_Reason"] = "Take Profit"
                 portfolio_df.at[idx, "Exit_Price"] = round(entry_price * (1 + TARGET_TP), 2)
                 portfolio_df.at[idx, "Exit_Date"] = target_date
+                portfolio_df.at[idx, "PnL_Pct"] = round(TARGET_TP * 100, 2)
             elif holding_days >= MAX_HOLDING_DAYS:
                 portfolio_df.at[idx, "Status"] = "CLOSED"
                 portfolio_df.at[idx, "Exit_Reason"] = "Max Horizon"
                 portfolio_df.at[idx, "Exit_Price"] = round(current_price, 2)
                 portfolio_df.at[idx, "Exit_Date"] = target_date
+                final_pnl = ((current_price - entry_price) / entry_price) * 100
+                portfolio_df.at[idx, "PnL_Pct"] = round(final_pnl, 2)
+
 
     # Step 2: Inject any qualified high-confidence setups
     active_tickers = portfolio_df[portfolio_df["Status"] == "OPEN"]["Ticker"].tolist()
