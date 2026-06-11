@@ -1,23 +1,22 @@
 @echo off
-title AI Swing Trading Pipeline Agent
-
 cd /d C:\Users\avysh\Documents\AI-Trader
 
-echo ==========================================================
+echo ==========================================
 echo EXECUTING DAILY TRADING ENGINE WORKFLOW...
-echo ==========================================================
+echo ==========================================
 
-call .venv\Scripts\activate
+echo [STEP 1/3] Generating model predictions...
+python generate_predictions.py
 
-echo [STEP 1/2] Fetching market logs and executing AI updates...
+echo.
+echo [STEP 2/3] Generating daily signals...
 python daily_signals.py
 
 echo.
-echo [STEP 2/2] Parsing active portfolio and validating exits...
+echo [STEP 3/3] Updating portfolio...
 python trade_logger.py
 
-echo ==========================================================
-echo PIPELINE WORKFLOW COMPLETE. PERSISTENT LEDGERS UPDATED.
-echo ==========================================================
-
+echo ==========================================
+echo PIPELINE WORKFLOW COMPLETE
+echo ==========================================
 pause
